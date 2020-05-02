@@ -1,0 +1,1 @@
+export const BASE_URL = "https://canary1.demo-cert.sk/v1/";
