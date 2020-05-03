@@ -1,5 +1,5 @@
 <template>
-  <v-app>
+  <v-app :style="`background-image:url(${background});background-size:cover;`">
     <v-content>
       <BasicToolbar v-if="isLogin" />
       <AdminToolbar v-else />
@@ -33,6 +33,9 @@ export default {
     isLogin() {
       // console.log(this.$route.path);
       return this.$route.path == "/login";
+    },
+    background() {
+      return require("./assets/background.jpg");
     }
   },
 

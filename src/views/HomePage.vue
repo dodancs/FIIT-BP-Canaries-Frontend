@@ -310,6 +310,11 @@ export default {
     },
     editItem(item) {
       this.toEdit = item;
+      var canary = this.canaries.find(c => c.uuid == item.uuid);
+      var ss = this.sites.find(s => s.uuid == canary.site);
+      var sa = this.users.find(u => u.uuid == canary.assignee);
+      this.selectedSite = ss == null ? null : ss.uuid;
+      this.selectedAssignee = sa == null ? null : sa.uuid;
       this.editDialog = true;
     },
     deleteItem(item) {
