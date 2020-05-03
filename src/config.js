@@ -1,1 +1,3 @@
-export const BASE_URL = "https://canary1.demo-cert.sk/v1/";
+export const config = {
+    baseURL: "https://canary1.demo-cert.sk/v1/",
+};
