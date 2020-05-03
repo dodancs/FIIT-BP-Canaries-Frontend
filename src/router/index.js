@@ -2,6 +2,7 @@ import Vue from "vue";
 import VueRouter from "vue-router";
 import HomePage from "../views/HomePage.vue";
 import DomainsPage from "../views/DomainsPage.vue";
+import SitesPage from "../views/SitesPage.vue";
 import LoginPage from "../views/LoginPage.vue";
 import axios from "axios";
 import store from "../store";
@@ -18,6 +19,11 @@ const routes = [{
         path: "/domains",
         name: "DomainsPage",
         component: DomainsPage,
+    },
+    {
+        path: "/sites",
+        name: "SitesPage",
+        component: SitesPage,
     },
     {
         path: "/login",
