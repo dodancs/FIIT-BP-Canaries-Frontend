@@ -21,8 +21,11 @@
                 <v-col class="d-flex justify-end">
                   <v-switch v-model="setup" label="Only setup" hide-details class="pa-1 mr-5"></v-switch>
                   <v-switch v-model="testing" label="Only testing" hide-details class="pa-1 mr-3"></v-switch>
-                  <v-btn icon @click="refreshData" class="mt-n2">
+                  <v-btn icon @click="refreshData" class="mt-n2 mr-3">
                     <v-icon>mdi-refresh</v-icon>
+                  </v-btn>
+                  <v-btn icon @click="addDialog = true" class="mt-n2">
+                    <v-icon>mdi-plus</v-icon>
                   </v-btn>
                 </v-col>
               </v-row>
@@ -155,8 +158,69 @@
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn color="grey darken-1" text @click="editDialog = false">Close</v-btn>
+          <v-btn
+            color="grey darken-1"
+            text
+            @click="editDialog = false; selectedSite = null; selectedAssignee = null;"
+          >Close</v-btn>
           <v-btn color="blue darken-1" text @click="proceedWithEdit">Save</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="addDialog" persistent max-width="600px">
+      <v-card>
+        <v-card-title>
+          <span class="headline">Generate canary accounts</span>
+        </v-card-title>
+        <v-card-text>
+          <v-container>
+            <v-row>
+              <v-col cols="12">
+                <v-autocomplete
+                  :items="domainsAutocomplete"
+                  label="Domain*"
+                  v-model="selectedDomain"
+                ></v-autocomplete>
+              </v-col>
+              <v-col cols="12">
+                <v-autocomplete
+                  :items="sitesAutocomplete"
+                  label="Site"
+                  v-model="selectedSite"
+                  clearable
+                ></v-autocomplete>
+              </v-col>
+              <v-col cols="12" sm="6" md="4">
+                <v-switch v-model="selectedTesting" label="Testing*"></v-switch>
+              </v-col>
+              <v-col cols="12" sm="6" md="4">
+                <v-text-field
+                  v-model="selectedCount"
+                  type="number"
+                  label="Count*"
+                  :rules="[() => !!selectedCount && selectedCount > 0 && selectedCount <= 1024 || 'Count must be from 1 to 1024']"
+                ></v-text-field>
+              </v-col>
+              <v-col cols="12" sm="6" md="4">
+                <v-select
+                  v-model="selectedStrength"
+                  :items="['trivial', 'simple', {text:'random (default)', value:'random'}, 'dictionary', 'strong']"
+                  label="Password strength"
+                ></v-select>
+              </v-col>
+            </v-row>
+          </v-container>
+          <small>*indicates required field</small>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn
+            color="grey darken-1"
+            text
+            @click="addDialog = false; selectedDomain = null; selectedSite = null;"
+          >Close</v-btn>
+          <v-btn color="blue darken-1" text @click="addCanary">Generate canaries</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -192,7 +256,12 @@ export default {
     editDialog: false,
     toEdit: null,
     selectedSite: null,
-    selectedAssignee: null
+    selectedAssignee: null,
+    addDialog: false,
+    selectedDomain: null,
+    selectedTesting: false,
+    selectedCount: 10,
+    selectedStrength: null
   }),
   methods: {
     async refreshData() {
@@ -361,6 +430,41 @@ export default {
         });
       this.toEdit = null;
       this.editDialog = false;
+      this.selectedSite = null;
+      this.selectedAssignee = null;
+    },
+    async addCanary() {
+      if (this.selectedSite == undefined) this.selectedSite = null;
+      axios
+        .post(
+          config.baseURL + "canaries",
+          {
+            domain: this.selectedDomain,
+            site: this.selectedSite,
+            testing: this.selectedTesting,
+            count: this.selectedCount,
+            password_strength: this.selectedStrength
+          },
+          {
+            headers: this.$store.getters.getTokenHeader
+          }
+        )
+        .then(() => {
+          this.refreshData();
+        })
+        .catch(error => {
+          this.errorMessage = error.response.data.message;
+          this.errorDetails = error.response.data.details;
+          this.error = true;
+        });
+
+      this.selectedDomain = null;
+      this.selectedSite = null;
+      this.selectedTesting = false;
+      this.selectedCount = 10;
+      this.selectedStrength = null;
+
+      this.addDialog = false;
     }
   },
   computed: {
