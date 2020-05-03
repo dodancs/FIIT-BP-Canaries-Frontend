@@ -341,8 +341,6 @@ export default {
         return;
       }
 
-      console.log(this.selectedUsername);
-
       axios
         .post(
           config.baseURL + "auth/users",
