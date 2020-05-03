@@ -2,24 +2,30 @@
   <v-content>
     <v-container class="fill-height" fluid>
       <v-row align="center" justify="center">
-        <v-col cols="12" sm="8" md="8">
+        <v-col cols="12" sm="8" md="10">
           <v-card class="elevation-12">
             <v-toolbar color="primary" dark flat>
-              <v-toolbar-title>Canary account management</v-toolbar-title>
-              <v-spacer />
-              <v-text-field
-                v-model="search"
-                append-icon="mdi-magnify"
-                label="Search"
-                single-line
-                hide-details
-              ></v-text-field>
-              <v-spacer />
-              <v-switch v-model="setup" label="Only setup" hide-details class="ma-5"></v-switch>
-              <v-switch v-model="testing" label="Only testing" hide-details class="ma-5"></v-switch>
-              <v-btn icon @click="refreshData" class="ma-1">
-                <v-icon class="mr-2">mdi-refresh</v-icon>
-              </v-btn>
+              <v-row class="d-flex flex-row pa-0 fill-height">
+                <v-col class="d-flex justify-start">
+                  <v-toolbar-title>Canary account management</v-toolbar-title>
+                </v-col>
+                <v-col class="d-flex justify-space-around">
+                  <v-text-field
+                    v-model="search"
+                    append-icon="mdi-magnify"
+                    label="Search"
+                    single-line
+                    hide-details
+                  ></v-text-field>
+                </v-col>
+                <v-col class="d-flex justify-end">
+                  <v-switch v-model="setup" label="Only setup" hide-details class="pa-1 mr-5"></v-switch>
+                  <v-switch v-model="testing" label="Only testing" hide-details class="pa-1 mr-3"></v-switch>
+                  <v-btn icon @click="refreshData" class="mt-n2">
+                    <v-icon>mdi-refresh</v-icon>
+                  </v-btn>
+                </v-col>
+              </v-row>
             </v-toolbar>
             <v-card-text>
               <v-alert
@@ -28,12 +34,14 @@
                 type="error"
                 elevation="2"
                 v-model="error"
+                dismissible
+                class="pr-7"
               >{{errorMessage}}: {{errorDetails}}</v-alert>
 
               <v-data-table
                 :headers="headers"
                 :items="tableData"
-                :items-per-page="20"
+                :items-per-page="10"
                 :search="search"
                 class="elevation-1"
                 group-by="site"
@@ -52,12 +60,12 @@
                     <template v-slot:activator="{ on }">
                       <v-icon
                         class="mr-2"
-                        @click="editItem(item)"
+                        @click="toggleSetup(item)"
                         v-on="on"
-                        color="primary"
+                        color="indigo"
                         v-if="item.setup"
                       >mdi-power</v-icon>
-                      <v-icon class="mr-2" @click="editItem(item)" v-on="on" v-else>mdi-power</v-icon>
+                      <v-icon class="mr-2" @click="toggleSetup(item)" v-on="on" v-else>mdi-power</v-icon>
                     </template>
                     <span>Toogle setup</span>
                   </v-tooltip>
@@ -66,19 +74,31 @@
                     <template v-slot:activator="{ on }">
                       <v-icon
                         class="mr-2"
-                        @click="editItem(item)"
+                        @click="toggleTesting(item)"
                         v-on="on"
                         color="teal"
                         v-if="item.testing"
                       >mdi-test-tube</v-icon>
                       <v-icon
                         class="mr-2"
-                        @click="editItem(item)"
+                        @click="toggleTesting(item)"
                         v-on="on"
                         v-else
                       >mdi-test-tube-off</v-icon>
                     </template>
                     <span>Toogle testing</span>
+                  </v-tooltip>
+
+                  <v-tooltip bottom>
+                    <template v-slot:activator="{ on }">
+                      <v-icon
+                        class="mr-2"
+                        @click="editItem(item)"
+                        v-on="on"
+                        color="primary"
+                      >mdi-pencil</v-icon>
+                    </template>
+                    <span>Edit</span>
                   </v-tooltip>
 
                   <v-tooltip bottom>
@@ -99,6 +119,47 @@
         </v-col>
       </v-row>
     </v-container>
+
+    <v-dialog v-model="deleteDialog" persistent max-width="290">
+      <v-card>
+        <v-card-title class="headline">Do you really want to delete this canary?</v-card-title>
+        <v-card-text>This operation cannot be undone. Please choose carefully how to proceed.</v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="red darken-1" text @click="proceedWithDelete">Yes, I want to.</v-btn>
+          <v-btn color="primary darken-1" text @click="deleteDialog = false; toDelete = null;">No!</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="editDialog" persistent max-width="600px">
+      <v-card>
+        <v-card-title>
+          <span class="headline">Edit canary</span>
+        </v-card-title>
+        <v-card-text>
+          <v-container>
+            <v-autocomplete
+              :items="sitesAutocomplete"
+              label="Site"
+              v-model="selectedSite"
+              clearable
+            ></v-autocomplete>
+            <v-autocomplete
+              :items="usersAutocomplete"
+              label="Assignee"
+              v-model="selectedAssignee"
+              clearable
+            ></v-autocomplete>
+          </v-container>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="grey darken-1" text @click="editDialog = false">Close</v-btn>
+          <v-btn color="blue darken-1" text @click="proceedWithEdit">Save</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-content>
 </template>
 
@@ -111,6 +172,11 @@ export default {
   components: {},
   data: () => ({
     sites: null,
+    sitesAutocomplete: null,
+    domains: null,
+    domainsAutocomplete: null,
+    users: null,
+    usersAutocomplete: null,
     canaries: null,
 
     tableData: [],
@@ -120,32 +186,75 @@ export default {
     errorDetails: "",
     testing: false,
     setup: false,
-    loading: true
+    loading: true,
+    deleteDialog: false,
+    toDelete: null,
+    editDialog: false,
+    toEdit: null,
+    selectedSite: null,
+    selectedAssignee: null
   }),
   methods: {
     async refreshData() {
       this.loading = true;
-      this.tableData = [];
       await axios
         .all([
           axios.get(config.baseURL + "sites", {
             headers: this.$store.getters.getTokenHeader
           }),
+          axios.get(config.baseURL + "domains", {
+            headers: this.$store.getters.getTokenHeader
+          }),
           axios.get(config.baseURL + "canaries", {
+            headers: this.$store.getters.getTokenHeader
+          }),
+          axios.get(config.baseURL + "auth/users", {
             headers: this.$store.getters.getTokenHeader
           })
         ])
         .then(
-          axios.spread((sites, canaries) => {
+          axios.spread((sites, domains, canaries, users) => {
             this.sites = sites.data.sites;
+            this.domains = domains.data.domains;
             this.canaries = canaries.data.canaries;
+            this.users = users.data.users;
+
+            this.tableData = [];
+            this.sitesAutocomplete = [];
+            this.domainsAutocomplete = [];
+            this.usersAutocomplete = [];
+
+            this.sites.forEach(site => {
+              this.sitesAutocomplete.push({
+                text: site.site,
+                value: site.uuid
+              });
+            });
+
+            this.domains.forEach(domain => {
+              this.domainsAutocomplete.push({
+                text: domain.domain,
+                value: domain.uuid
+              });
+            });
+
+            this.users.forEach(user => {
+              if (user.permissions.includes("worker"))
+                this.usersAutocomplete.push({
+                  text: user.username + " (" + user.uuid + ")",
+                  value: user.uuid
+                });
+            });
 
             this.canaries.forEach(canary => {
               var ss = this.sites.find(s => s.uuid == canary.site);
+              var ass = this.users.find(u => u.uuid == canary.assignee);
               this.tableData.push({
+                uuid: canary.uuid,
                 site: ss == null ? "-" : ss.site,
                 email: canary.email,
-                assignee: canary.assignee,
+                assignee:
+                  ass == null ? "" : ass.username + " (" + ass.uuid + ")",
                 setup: canary.setup,
                 testing: canary.testing
               });
@@ -158,14 +267,103 @@ export default {
           this.error = true;
         });
       this.loading = false;
+    },
+    async toggleTesting(item) {
+      axios
+        .put(
+          config.baseURL + "canaries/" + item.uuid,
+          {
+            testing: !item.testing
+          },
+          {
+            headers: this.$store.getters.getTokenHeader
+          }
+        )
+        .then(() => {
+          this.refreshData();
+        })
+        .catch(error => {
+          this.errorMessage = error.response.data.message;
+          this.errorDetails = error.response.data.details;
+          this.error = true;
+        });
+    },
+    async toggleSetup(item) {
+      axios
+        .put(
+          config.baseURL + "canaries/" + item.uuid,
+          {
+            setup: !item.setup
+          },
+          {
+            headers: this.$store.getters.getTokenHeader
+          }
+        )
+        .then(() => {
+          this.refreshData();
+        })
+        .catch(error => {
+          this.errorMessage = error.response.data.message;
+          this.errorDetails = error.response.data.details;
+          this.error = true;
+        });
+    },
+    editItem(item) {
+      this.toEdit = item;
+      this.editDialog = true;
+    },
+    deleteItem(item) {
+      this.toDelete = item.uuid;
+      this.deleteDialog = true;
+    },
+    async proceedWithDelete() {
+      axios
+        .delete(config.baseURL + "canaries/" + this.toDelete, {
+          headers: this.$store.getters.getTokenHeader
+        })
+        .then(() => {
+          this.refreshData();
+        })
+        .catch(error => {
+          this.errorMessage = error.response.data.message;
+          this.errorDetails = error.response.data.details;
+          this.error = true;
+        });
+      this.toDelete = null;
+      this.deleteDialog = false;
+    },
+    async proceedWithEdit() {
+      if (this.selectedSite == undefined) this.selectedSite = null;
+      if (this.selectedAssignee == undefined) this.selectedAssignee = null;
+      axios
+        .put(
+          config.baseURL + "canaries/" + this.toEdit.uuid,
+          {
+            site: this.selectedSite,
+            assignee: this.selectedAssignee
+          },
+          {
+            headers: this.$store.getters.getTokenHeader
+          }
+        )
+        .then(() => {
+          this.refreshData();
+        })
+        .catch(error => {
+          this.errorMessage = error.response.data.message;
+          this.errorDetails = error.response.data.details;
+          this.error = true;
+        });
+      this.toEdit = null;
+      this.editDialog = false;
     }
   },
   computed: {
     headers() {
       return [
         { text: "Site", align: "start", value: "site" },
-        { text: "E-mail", value: "email" },
-        { text: "Assignee", value: "assignee" },
+        { text: "E-mail", value: "email", width: "33%" },
+        { text: "Assignee", value: "assignee", width: "33%" },
         {
           text: "Set-up",
           value: "setup",
@@ -173,7 +371,8 @@ export default {
             if (!this.setup) return true;
 
             return this.setup == value;
-          }
+          },
+          width: "8%"
         },
         {
           text: "Testing",
@@ -182,7 +381,8 @@ export default {
             if (!this.testing) return true;
 
             return this.testing == value;
-          }
+          },
+          width: "8%"
         },
         { text: "Actions", value: "actions", sortable: false }
       ];
