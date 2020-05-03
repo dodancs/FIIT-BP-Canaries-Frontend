@@ -6,7 +6,6 @@
           <v-btn class="primary" depressed to="/">Canaries</v-btn>
           <v-btn class="primary" depressed to="/domains">Domains</v-btn>
           <v-btn class="primary" depressed to="/sites">Monitored sites</v-btn>
-          <v-btn class="primary" depressed to="/mail">Mail</v-btn>
           <v-btn class="primary" depressed to="/users">Users</v-btn>
         </v-toolbar-items>
       </v-col>
