@@ -192,7 +192,7 @@ export default {
         .post(
           config.baseURL + "sites",
           {
-            sites: [this.selectedSite]
+            site: this.selectedSite
           },
           {
             headers: this.$store.getters.getTokenHeader

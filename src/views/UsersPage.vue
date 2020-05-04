@@ -345,14 +345,9 @@ export default {
         .post(
           config.baseURL + "auth/users",
           {
-            users: [
-              {
-                username: this.selectedUsername,
-                password: this.selectedPassword,
-                permissions: this.selectedPermissions,
-                canaries: []
-              }
-            ]
+            username: this.selectedUsername,
+            password: this.selectedPassword,
+            permissions: this.selectedPermissions
           },
           {
             headers: this.$store.getters.getTokenHeader

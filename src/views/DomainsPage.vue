@@ -193,7 +193,7 @@ export default {
         .post(
           config.baseURL + "domains",
           {
-            domains: [this.selectedDomain]
+            domain: this.selectedDomain
           },
           {
             headers: this.$store.getters.getTokenHeader
