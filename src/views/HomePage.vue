@@ -50,6 +50,10 @@
                 group-by="site"
                 :loading="loading"
                 loading-text="Loading data, please wait..."
+                :single-expand="singleExpand"
+                :expanded.sync="expanded"
+                item-key="uuid"
+                show-expand
               >
                 <template v-slot:item.setup="{ item }">
                   <v-simple-checkbox v-model="item.setup" disabled></v-simple-checkbox>
@@ -115,6 +119,56 @@
                     </template>
                     <span>Delete</span>
                   </v-tooltip>
+                </template>
+
+                <template v-slot:expanded-item="{ headers, item }">
+                  <td :colspan="headers.length">
+                    <v-simple-table class="ma-2">
+                      <template v-slot:default>
+                        <thead>
+                          <tr>
+                            <th class="text-left">Key</th>
+                            <th class="text-left">Value</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td>UUID</td>
+                            <td>{{item.uuid}}</td>
+                          </tr>
+                          <tr>
+                            <td>E-mail</td>
+                            <td>{{item.email}}</td>
+                          </tr>
+                          <tr>
+                            <td>Password</td>
+                            <td>{{item.password}}</td>
+                          </tr>
+                          <tr>
+                            <td>Site</td>
+                            <td>{{item.site}}</td>
+                          </tr>
+                          <tr>
+                            <td>Assignee</td>
+                            <td>{{item.assignee}}</td>
+                          </tr>
+                          <tr>
+                            <td>Set-up</td>
+                            <td>{{item.setup}}</td>
+                          </tr>
+                          <tr>
+                            <td>Testing</td>
+                            <td>{{item.testing}}</td>
+                          </tr>
+
+                          <tr v-for="(v, k) in item.data" :key="k">
+                            <td>{{ k }}</td>
+                            <td>{{ v }}</td>
+                          </tr>
+                        </tbody>
+                      </template>
+                    </v-simple-table>
+                  </td>
                 </template>
               </v-data-table>
             </v-card-text>
@@ -244,6 +298,8 @@ export default {
     canaries: null,
 
     tableData: [],
+    expanded: [],
+    singleExpand: false,
     search: "",
     error: false,
     errorMessage: "",
@@ -325,7 +381,9 @@ export default {
                 assignee:
                   ass == null ? "" : ass.username + " (" + ass.uuid + ")",
                 setup: canary.setup,
-                testing: canary.testing
+                testing: canary.testing,
+                password: canary.password,
+                data: canary.data
               });
             });
           })
